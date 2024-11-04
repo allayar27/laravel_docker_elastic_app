@@ -25,9 +25,7 @@ class UserController extends Controller
                         ->orWhere('email', 'like', '%' . $searchTerm . '%');
 
         })->latest()->paginate(6);
-//  else {
-//             $users = User::query()->latest()->paginate(6);
-//         }
+
         return view('users.index', compact('users'));
     }
 

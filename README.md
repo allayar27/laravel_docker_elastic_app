@@ -67,6 +67,7 @@ git clone https://github.com/allayar27/Todo-App-Project.git
 ```bash
  npm install
  npm run dev
+ npm run build
 ```
    
 7. Запустите приложение:
