@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Elasticsearch;
 
 class DashboardController extends Controller
 {
@@ -14,25 +15,55 @@ class DashboardController extends Controller
     {
         $searchTerm = trim($request->input('search'));
         $user = Auth::user();
+        $tasksQuery = Task::query();
 
-        $tasks = Task::query()->when(!$user->isAdmin(), function ($query) use ($user) {
-                // Применяем этот  фильтр по user_id, если пользователь не админ
-                $query->where('user_id', $user->id);
-        })
-        ->when($request->filled('search'), function ($query) use ($searchTerm) {
-                    $query->where('id', 'like', '%' . $searchTerm . '%')
-                        ->orWhere('title', 'like', '%' . $searchTerm . '%');
+        if ($searchTerm) {
+        $response = Elasticsearch::search([
+            'index' => 'tasks',
+            'body' => [
+                'query' => [
+                    'multi_match' => [
+                        'query' => $searchTerm,
+                        'fields' => ['title']
+                        ]
+                    ]
+                ]
+            ]);
+
+            $taskIds = array_column($response['hits']['hits'], '_id');
+            $tasksQuery->whereIn('id', $taskIds);
+        }
+
+        // $tasks = Task::query()->when(!$user->isAdmin(), function ($query) use ($user) {
+        //         $query->where('user_id', $user->id);
+        // })
+        // ->when($request->filled('search'), function ($query) use ($searchTerm) {
+        //             $query->where('id', 'like', '%' . $searchTerm . '%')
+        //                 ->orWhere('title', 'like', '%' . $searchTerm . '%');
+        // })
+        // ->when($request->input('status') == 'completed', function ($query) {
+        //     $query->where('completed', true);
+        // })
+        // ->when($request->input('status') == 'uncompleted', function ($query) {
+        //         $query->where('completed', false);
+        // })
+        // ->when($request->input('status') == '', function ($query) {
+            
+        // })
+        // ->orderByDesc('id')->paginate(6);
+
+        $tasks = $tasksQuery->when(!$user->isAdmin(), function ($query) use ($user) {
+            $query->where('user_id', $user->id);
         })
         ->when($request->input('status') == 'completed', function ($query) {
             $query->where('completed', true);
         })
         ->when($request->input('status') == 'uncompleted', function ($query) {
-                $query->where('completed', false);
-        })
-        ->when($request->input('status') == '', function ($query) {
-            
+            $query->where('completed', false);
         })
         ->orderByDesc('id')->paginate(6);
+
         return view('dashboard', compact('tasks'));
     }
+
 }

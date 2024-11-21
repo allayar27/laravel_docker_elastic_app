@@ -2,29 +2,55 @@
 
 namespace App\Http\Controllers;
 
-
-
 use App\Http\Requests\UserFormRequest;
-
-
 use App\Http\Requests\UserUpdateRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
-
+use Elasticsearch;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class UserController extends Controller
 {
 
     public function index(Request $request): View
     {
-        $searchTerm = trim($request->input('search'));
-        $users = User::query()->when($request->filled('search'), function ($query) use ($searchTerm) {
-                    $query->where('name', 'like', '%' . $searchTerm . '%')
-                        ->orWhere('email', 'like', '%' . $searchTerm . '%');
+        $query = trim($request->input('search'));
+        $perPage = 6;
+        $currentPage = $request->input('page', 1);
+        
+        if ($query) {
+            $response = Elasticsearch::search([
+                'index' => 'users',
+                'body' => [
+                    'query' => [
+                        'multi_match' => [
+                            'query' => $query,
+                            'fields' => [
+                                'name',
+                                'email'
+                            ]
+                        ]
+                    ],
+                    'from' => ($currentPage - 1) * $perPage,
+                    'size' => $perPage
+                ]
+            ]);
 
-        })->latest()->paginate(6);
+            $userIds = array_column($response['hits']['hits'], '_id');
+            $usersCollection = User::query()->findMany($userIds);
+
+            $users = new LengthAwarePaginator(
+                $usersCollection,
+                $response['hits']['total']['value'],
+                $perPage,
+                $currentPage,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+        } else {
+            $users = User::query()->latest()->paginate(6);
+        }
 
         return view('users.index', compact('users'));
     }
@@ -43,7 +69,7 @@ class UserController extends Controller
     {
         $validate = $request->validated();
         $validate['password'] = bcrypt($validate['password']);
-        
+
         $user = User::create($validate);
 
         if (!empty($request->roles)) {
