@@ -2,18 +2,17 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\BulkUserIndexingJob;
-use App\Jobs\IndexUsersJob;
+use App\Jobs\DeleteTasksIndexJob;
 use Illuminate\Console\Command;
 
-class DispatchIndexUsersJob extends Command
+class DispatchDeleteTasksIndexJob extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'dispatch:index-users-job';
+    protected $signature = 'dispatch:delete-tasks-index-job';
 
     /**
      * The console command description.
@@ -25,9 +24,9 @@ class DispatchIndexUsersJob extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): void
+    public function handle()
     {
-        BulkUserIndexingJob::dispatch();
-        $this->info("BulkUserIndexingJob has been dispatched.");
+        DeleteTasksIndexJob::dispatch();
+        $this->info("DeleteTasksIndexJob has been dispatched.");
     }
 }

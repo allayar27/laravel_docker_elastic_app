@@ -13,7 +13,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('dispatch:index-users-job');
-        $schedule->command('dispatch:index-posts-job'); 
+        $schedule->command('dispatch:index-posts-job');
+        $schedule->command('index:bulk');
     }
 
 

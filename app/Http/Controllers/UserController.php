@@ -19,7 +19,7 @@ class UserController extends Controller
         $query = trim($request->input('search'));
         $perPage = 6;
         $currentPage = $request->input('page', 1);
-        
+
         if ($query) {
             $response = Elasticsearch::search([
                 'index' => 'users',
@@ -28,8 +28,7 @@ class UserController extends Controller
                         'multi_match' => [
                             'query' => $query,
                             'fields' => [
-                                'name',
-                                'email'
+                                'combined_fields'
                             ]
                         ]
                     ],

@@ -47,7 +47,7 @@ COPY --chown=www:www . /var/www/html
 USER www
 
 # Открываем порт 9000 для php-fpm
-EXPOSE 9000
+# EXPOSE 9000
 
 # Запускаем PHP-FPM сервер
 # CMD ["php-fpm"]
